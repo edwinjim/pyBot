@@ -19,8 +19,16 @@ s.send('JOIN %s\r\n' % CHANNEL)
 s.send('MODE %s\r\n' % MODE)
 s.send ('PRIVMSG %s :hello human life forms\r\n' % CHANNEL)
 
-while 1:                                                                             
+while 1:
   data = s.recv (4096)
   if data.find ('PING') != -1:
-    s.send ('PONG')
+    s.send ('PONG '+ data.split() [1] + '\r\n')
+
+  if data.find ('PRIVMSG %s :!quit' % CHANNEL) != -1:
+    s.send ('DISCONNECT '+ data.split() [1] + '\r\n')
+    s.close()
+
+  if data.find ('PRIVMSG %s :!ping' % CHANNEL) != -1:
+    s.send('PRIVMSG %s :pong\r\n' % CHANNEL)
+
   print data
