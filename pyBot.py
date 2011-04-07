@@ -22,10 +22,10 @@ s.send ('PRIVMSG %s :hello human life forms\r\n' % CHANNEL)
 while 1:
   data = s.recv (4096)
   if data.find ('PING') != -1:
-    s.send ('PONG '+ data.split() [1] + '\r\n')
+    s.send ('PONG \r\n')
 
   if data.find ('PRIVMSG %s :!quit' % CHANNEL) != -1:
-    s.send ('DISCONNECT '+ data.split() [1] + '\r\n')
+    s.send ('QUIT : \r\n')
     s.close()
 
   if data.find ('PRIVMSG %s :!ping' % CHANNEL) != -1:
