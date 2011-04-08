@@ -16,25 +16,31 @@ s.send('NICK %s\r\n' % NICK)
 s.send('USER %s %s bla :%s\r\n' % (IDENT, HOST, REALNAME))
 s.send('JOIN %s\r\n' % CHANNEL)
 s.send('MODE %s\r\n' % MODE)
-#s.send ('PRIVMSG %s :hello human life forms\r\n' % CHANNEL)
 
 def check_badword():
   try:
     fileHandle = open ('badwords.txt', 'r')
     badwords = fileHandle.read()
     global blacklist 
-    blacklist = badwords.replace('\n','').split(',')
-    
+    blacklist = badwords.replace('\r\n','').split(',')
+      
   except:
     fileHandle = open ('badwords.txt', 'w')
-    fileHandle.close() 
+  fileHandle.close() 
+
+def learn_badword(data):
+  fileHandle = open ('badwords.txt', 'a')
+  badword = ((data.split('!learn')[1]).replace('\r\n',',').split()[0])
+  fileHandle.write(badword)
+  fileHandle.close()
+  return badword
 
 check_badword() 
  
 while 1:
   data = s.recv (4096)
   if data.find ('PING') != -1:
-    s.send ('PONG \r\n')
+    s.send ('PONG '+ data.split() [1] + '\r\n')
   elif data.find ('PRIVMSG %s :!quit' % CHANNEL) != -1:
     s.send ('QUIT : \r\n')
     s.close()
@@ -46,7 +52,8 @@ while 1:
     for i in blacklist:
       if i in data.split(CHANNEL)[1].replace('\r\n', '').replace(':', '').split(): 
         s.send('PRIVMSG %s :bad word detected\r\n' % CHANNEL)
-
+  if data.find('PRIVMSG %s :!learn' % CHANNEL) != -1:
+    s.send('PRIVMSG %s :new bad word added: ' % CHANNEL + learn_badword(data) + '\r\n')
 # on some evening on some day someone did some not working blackmagic here
 #((i + ' ' in data.split('#game-dev')[1].replace('\r\n', '') or len(data.split('#game-dev')[1].split(i)[1].replace('\r\n', ''))==0) or (' ' + i in data.split('#game-dev')[1]  or len(data.split('#game-dev')[1].split(i)[0].replace('\r\n', '') or ':' + i in data.split('#game-dev')[1])==0)):
 #######################
