@@ -3,8 +3,8 @@ import socket
 import string
 from sqlite3 import dbapi2 as sqlite
 
-HOST='127.0.0.1'
-CHANNEL='#bot'
+HOST='irc.ph2network.org'
+CHANNEL='#bottest'
 PORT=6667
 
 NICK='pyBot_alpha'
@@ -19,38 +19,37 @@ s.send('USER %s %s bla :%s\r\n' % (IDENT, HOST, REALNAME))
 s.send('JOIN %s\r\n' % CHANNEL)
 s.send('MODE %s\r\n' % MODE)
 
-def check_badword():
-    connection = sqlite.connect('badwords.db') 
+def open_condb():
+  connection = sqlite.connect('badwords.db')
+  cursor = connection.cursor()
+  cursor.execute('CREATE TABLE IF NOT EXISTS badwords (id INTEGER PRIMARY KEY, word VARCHAR(50))') 
+ 
+def close_condb():
+  cursor.close()
+  connection.close()
+
+def check_badword(data):
     cursor = connection.cursor()
-    cursor.execute('SELECT * FROM badwords')
+    t =  data
+    cursor.execute('SELECT * FROM badwords WHERE word=?', t)
 
 def db_write(data):
-    badword = ((data.split('!learn')[1]).replace('\n','').replace('\r','').split()[0])
     connection = sqlite.connect('badwords.db')
     cursor = connection.cursor()
-    cursor.execute('INSERT INTO badwords VALUES (null," {0}")'.format(badword))
+    badword = ((data.split('!learn')[1]).replace('\n','').replace('\r','').split()[0])
+    cursor.execute('INSERT INTO badwords VALUES (null,"{0}")'.format(badword))
     connection.commit()
     return badword
-   
-def check_dbexist():
-  try:
-    fileHandle = open('badwords.db', 'r')
-    fileHandle.close()
 
-  except:
-    connection = sqlite.connect('badwords.db')
-    cursor = connection.cursor()
-    cursor.execute('CREATE TABLE badwords (id INTEGER PRIMARY KEY,word VARCHAR(50))')
-    connection.commit()
-
-check_dbexist()
+open_condb()
 
 while 1:
   data = s.recv (4096)
   if data.find ('PING') != -1:
     s.send ('PONG '+ data.split() [1] + '\r\n')
   elif data.find ('PRIVMSG {0} :!quit'.format(CHANNEL)) != -1:
-    s.send ('QUIT : \r\n')
+    s.send('QUIT : \r\n') 
+    close_condb
     s.close()
   elif data.find ('PRIVMSG {0} :!version'.format(CHANNEL)) != -1:
     s.send('PRIVMSG {0} :i am bleeding edge\r\n'.format(CHANNEL))
