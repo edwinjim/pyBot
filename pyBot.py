@@ -1,6 +1,4 @@
-import sys
-import socket
-import string
+import sys, socket, string
 from sqlite3 import dbapi2 as sqlite
 
 def build_conserver():
@@ -16,10 +14,25 @@ def build_conserver():
   REALNAME=('%s' % NICK)
   MODE=('%s +B' % NICK)
 
-  s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  s.connect((HOST, PORT))
+  for i in socket.getaddrinfo(HOST, PORT, socket.AF_UNSPEC, socket.SOCK_STREAM):
+    af, socktype, proto, canonname, sa = i
+    try:
+        s = socket.socket(af, socktype, proto)
+    except socket.error, msg:
+        snet = None
+        continue
+    try:
+        s.connect(sa)
+    except socket.error, msg:
+        s.close()
+        s = None
+        continue
+    break
+  if s is None:
+    sys.exit(1) 
+
   s.send('NICK %s\r\n' % NICK)
-  s.send('USER %s %s bla :%s\r\n' % (IDENT, HOST, REALNAME))
+  s.send('USER %s %s pyBot :%s\r\n' % (IDENT, HOST, REALNAME))
   s.send('JOIN %s\r\n' % CHANNEL)
   s.send('MODE %s\r\n' % MODE)
 
@@ -28,9 +41,12 @@ def open_condb():
   cursor = connection.cursor()
   cursor.execute('CREATE TABLE IF NOT EXISTS badwords (id INTEGER PRIMARY KEY,word VARCHAR(50) UNIQUE)') 
  
-def close_condb():
+def close_con():
   cursor.close()
   connection.close()
+  s.shutdown()
+  s.close()
+  sys.exit(0)
 
 def check_badword(data):
   cursor = connection.cursor()
@@ -56,11 +72,10 @@ open_condb()
 while 1:
   data = s.recv (4096)
   if data.find ('PING') != -1:
-    s.send ('PONG '+ data.split() [1] + '\r\n')
+    s.send ('PONG '+ data.split()[1] + '\r\n')
   elif data.find ('PRIVMSG {0} :!quit'.format(CHANNEL)) != -1:
-    s.send('QUIT : \r\n') 
-    close_condb
-    s.close()
+    s.send('QUIT : \r\n' ) 
+    close_con
   elif data.find ('PRIVMSG {0} :!version'.format(CHANNEL)) != -1:
     s.send('PRIVMSG {0} :i am bleeding edge and might be broken\r\n'.format(CHANNEL))
   elif data.find ('PRIVMSG {0} :!ping'.format(CHANNEL)) != -1:
@@ -77,4 +92,5 @@ while 1:
 #((i + ' ' in data.split('#game-dev')[1].replace('\r\n', '') or len(data.split('#game-dev')[1].split(i)[1].replace('\r\n', ''))==0) or (' ' + i in data.split('#game-dev')[1]  or len(data.split('#game-dev')[1].split(i)[0].replace('\r\n', '') or ':' + i in data.split('#game-dev')[1])==0)):
 #######################
       
-  print data
+  print(data)
+
