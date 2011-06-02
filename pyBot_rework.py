@@ -1,8 +1,5 @@
-#
-# this will be a system information bot... somewhen
-#
-
-import os, sys, socket, string, ConfigParser, commands
+import os, sys, socket, string, ConfigParser 
+from subprocess import Popen, PIPE
 from signal import SIGTERM
 
 ## open file and get information from there
@@ -75,7 +72,7 @@ def close_con():
   sys.exit()
 
 build_conserver()
-daemonize()
+#daemonize()
 
 
 while 1:
@@ -87,12 +84,22 @@ while 1:
   if 'PRIVMSG {0} :!ping'.format(CHANNEL) in data:
     s.send('PRIVMSG {0} :pong\r\n'.format(CHANNEL))
 
-  if 'PRIVMSG {0} :!sysinfo'.format(CHANNEL) in data:
-    uptime = commands.getstatusoutput('uptime')[1]
+  if 'PRIVMSG {0} :!loadinfo'.format(CHANNEL) in data:
+    uptime = Popen("uptime", shell=False, stdout=PIPE).stdout.readline()
     up = "".join(uptime.split(",")[:2]).split("up")[1]+"".join(uptime.split(",")[3:])
     s.send(('PRIVMSG {0} :' + str(up) + '\r\n').format(CHANNEL))
   else: 
-	up=""
+	up = ""
+
+  if 'PRIVMSG {0} :!netinfo'.format(CHANNEL) in data:
+    netgrep = Popen("ifconfig wlan0 | grep RX | grep bytes", shell=False, stdout=PIPE).stdout.readline()
+    net = "".join(netgrep.split("RX")[1])
+    s.send(('PRIVMSG {0} :' + str(net) + '\r\n').format(CHANNEL))
+  else:
+   net = ""
+
+  #if 'PRIVMSG {0} :!netinfo'.format(CHANNEL) in data:
+  
 
   if 'PRIVMSG {0} :!quit'.format(CHANNEL) in data:
     s.send('QUIT : \r\n' ) 
