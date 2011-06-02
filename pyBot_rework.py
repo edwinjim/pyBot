@@ -74,10 +74,8 @@ def close_con():
   os.kill(pf, SIGTERM)
   sys.exit()
 
-up = commands.getstatusoutput('uptime')
-
 build_conserver()
-#daemonize()
+daemonize()
 
 
 while 1:
@@ -90,8 +88,11 @@ while 1:
     s.send('PRIVMSG {0} :pong\r\n'.format(CHANNEL))
 
   if 'PRIVMSG {0} :!sysinfo'.format(CHANNEL) in data:
+    uptime = commands.getstatusoutput('uptime')[1]
+    up = "".join(uptime.split(",")[:2]).split("up")[1]+"".join(uptime.split(",")[3:])
     s.send(('PRIVMSG {0} :' + str(up) + '\r\n').format(CHANNEL))
-    up = ""
+  else: 
+	up=""
 
   if 'PRIVMSG {0} :!quit'.format(CHANNEL) in data:
     s.send('QUIT : \r\n' ) 
