@@ -6,10 +6,17 @@ from signal import SIGTERM
 config = ConfigParser.ConfigParser()
 config.read("config.ini")
 
-HOST = config.get("connect", "server")
-PORT = config.get("connect", "port")
+HOST 	= config.get("connect", "server")
+PORT 	= config.get("connect", "port")
 CHANNEL = config.get("connect", "channel")
-NICK = config.get("connect", "nick")
+NICK 	= config.get("connect", "nick")
+
+DEVICE 	= config.get("device", "interface")
+
+LOAD 	= config.get("allow", "uptime")
+NET 	= config.get("allow", "ifconfig")
+PS 		= config.get("allow", "ps")
+
 
 IDENT=('%s' % NICK)
 REALNAME=('%s' % NICK)
@@ -84,31 +91,33 @@ while 1:
   if 'PRIVMSG {0} :!ping'.format(CHANNEL) in data:
     s.send('PRIVMSG {0} :pong\r\n'.format(CHANNEL))
 
-  if 'PRIVMSG {0} :!loadinfo'.format(CHANNEL) in data:
-    uptime = Popen("uptime", shell=True, stdout=PIPE).stdout.readline()
-    up = "".join(uptime.split(",")[:2]).split("up")[1]+"".join(uptime.split(",")[3:])
-    s.send(('PRIVMSG {0} :' + str(up) + '\r\n').format(CHANNEL))
-  else: 
-	up = ""
+  if 'PRIVMSG {0} :!load'.format(CHANNEL) in data:
+    if LOAD == "yes": 
+      uptime = Popen("uptime", shell=True, stdout=PIPE).stdout.readline()
+      up = "".join(uptime.split(",")[:2]).split("up")[1]+"".join(uptime.split(",")[3:])
+      s.send(('PRIVMSG {0} :' + str(up) + '\r\n').format(CHANNEL))
+    else: 
+	  up = ""
 
-  if 'PRIVMSG {0} :!netinfo'.format(CHANNEL) in data:
-    netgrep = Popen("ifconfig wlan0 | grep RX | grep bytes", shell=True, stdout=PIPE).stdout.readline()
-    net = "".join(netgrep.split("RX")[1])
-    s.send(('PRIVMSG {0} :' + str(net) + '\r\n').format(CHANNEL))
-  else:
-   net = ""
+  if 'PRIVMSG {0} :!net'.format(CHANNEL) in data:
+    if NET == "yes":
+      netgrep = Popen("ifconfig " + DEVICE + " | grep RX | grep bytes", shell=True, stdout=PIPE).stdout.readline()
+      net = "".join(netgrep.split("RX")[1])
+      s.send(('PRIVMSG {0} :' + str(net) + '\r\n').format(CHANNEL))
+    else:
+     net = ""
 
   if 'PRIVMSG {0} :!runs'.format(CHANNEL) in data:
-    runs = data.split('!runs')[1].replace('\r','').replace('\n','')
-    if "1" in Popen("ps -A | awk '/" + runs + "/{print \"1\";exit}'", shell=True, stdout=PIPE).stdout.readline():
-      s.send(('PRIVMSG {0} : 1 \r\n').format(CHANNEL))
+    if PS == "yes":
+      runs = data.split('!runs')[1].replace('\r','').replace('\n','')
+      if "1" in Popen("ps ax | awk '/" + runs + "/ && !/awk/{print \"1\";exit}'", shell=True, stdout=PIPE).stdout.readline():
+        s.send(('PRIVMSG {0} : 1 \r\n').format(CHANNEL))
+      else:
+        s.send(('PRIVMSG {0} : 0 \r\n').format(CHANNEL))
     else:
-      s.send(('PRIVMSG {0} : 0 \r\n').format(CHANNEL))
-  else:
-    runs = ""
+      runs = ""
     
   if 'PRIVMSG {0} :!quit'.format(CHANNEL) in data:
     s.send('QUIT : \r\n' ) 
     close_con()
 
-  print (data)
