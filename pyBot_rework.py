@@ -79,7 +79,7 @@ def close_con():
   sys.exit()
 
 build_conserver()
-#daemonize()
+daemonize()
 
 
 while 1:
